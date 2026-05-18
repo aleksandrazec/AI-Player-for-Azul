@@ -16,8 +16,8 @@ public class Game {
         this.tilesBag=new TilesBag(tileBox);
         this.centerOfTable=new CenterOfTable();
         this.factories=initializeFactories();
-        this.playerOne=new Board(tileBox);
-        this.playerTwo=new Board(tileBox);
+        this.playerOne=new Board(tileBox,centerOfTable);
+        this.playerTwo=new Board(tileBox,centerOfTable);
         random = new SecureRandom();
 //        playerOnesTurn= random.nextBoolean();
         playerOnesTurn=true;
@@ -32,10 +32,10 @@ public class Game {
     public boolean isPlayerOnesTurn(){
         return playerOnesTurn;
     }
-    public GameState getCurrentGameState(){
-        return new GameState(playerOne, playerTwo, factories, centerOfTable);
-    }
-    public List<GameState> getPossibleGameStates(){
-        return new ArrayList<>();
-    }
+//    public GameState getCurrentGameState(){
+//        return new GameState(playerOne, playerTwo, factories, centerOfTable);
+//    }
+//    public List<GameState> getPossibleGameStates(){
+//        return new ArrayList<>();
+//    }
 }

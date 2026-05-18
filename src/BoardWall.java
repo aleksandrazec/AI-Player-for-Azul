@@ -20,7 +20,7 @@ public class BoardWall {
     }
 
     public boolean rowContainsTile(int row, TileType type){
-        return wall[row][getColNumber(row, type)] == 1;
+        return wall[row][getColIndexBasedOnType(row, type)] == 1;
     }
     /**
      *
@@ -32,7 +32,7 @@ public class BoardWall {
         if(tile.type==TileType.startingPlayerMarker){
             return 0;
         }
-        int col=getColNumber(row,tile.type);
+        int col= getColIndexBasedOnType(row,tile.type);
         wall[row][col]=1;
         int verticalNeighbors=getVerticalNeighbors(row,col);
         int horizontalNeighbors=getHorizontalNeighbors(row,col);
@@ -72,6 +72,22 @@ public class BoardWall {
         }
         return num;
     }
+    public int getNumberOfFullCols(){
+        int[] colAmount = new int[5];
+        for (int i = 0; i < wall.length; i++) {
+            for (int j = 0; j < wall[0].length; j++) {
+                if(wall[i][j]==1){
+                    colAmount[j]++;
+                }
+            }
+        }
+        return colAmount[0]+colAmount[1]+colAmount[2]+colAmount[3]+colAmount[4];
+    }
+
+    public int getNumberOfFullDiagonals(){
+        int[] colorAmount = new int[5];
+        return 0;
+    }
     private int calculateNumOfVertical(int row, int col){
         int points=0;
         int tempCol=col;
@@ -98,7 +114,22 @@ public class BoardWall {
         }
         return points+1;
     }
-    private int getColNumber(int row,TileType type){
+    private TileType getTypeBasedOnColIndex(int row, int col){
+        TileType type=TileType.startingPlayerMarker;
+        if(row==col){
+            type=TileType.blue;
+        } else if ((row+1)%5==col) {
+            type=TileType.yellow;
+        } else if ((row+2)%5==col) {
+            type=TileType.red;
+        } else if ((row+3)%5==col) {
+            type=TileType.black;
+        } else if((row+4)%5==col){
+            type=TileType.cyan;
+        }
+        return type;
+    }
+    private int getColIndexBasedOnType(int row, TileType type){
         int col=-1;
         switch (type){
             case blue -> col=row;
@@ -131,4 +162,5 @@ public class BoardWall {
         }
         return right+left;
     }
+
 }

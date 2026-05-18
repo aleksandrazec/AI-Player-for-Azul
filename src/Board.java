@@ -5,17 +5,28 @@ public class Board {
     private final BoardPatternLine[] boardPatternLines;
     private boolean startingPlayerMarker;
     private final TileBox tileBox;
+    private final CenterOfTable centerOfTable;
 
-    public Board(TileBox tileBox){
+//    public Board(int currentPoints, BoardWall boardWall, BoardFloorLine boardFloorLine, BoardPatternLine[] boardPatternLines, boolean startingPlayerMarker, TileBox tileBox) {
+//        this.currentPoints = currentPoints;
+//        this.boardWall = boardWall;
+//        this.boardFloorLine = boardFloorLine;
+//        this.boardPatternLines = boardPatternLines;
+//        this.startingPlayerMarker = startingPlayerMarker;
+//        this.tileBox = tileBox;
+//    }
+
+    public Board(TileBox tileBox, CenterOfTable centerOfTable){
         this.tileBox=tileBox;
+        this.centerOfTable=centerOfTable;
         boardWall=new BoardWall();
         boardFloorLine=new BoardFloorLine(this,tileBox);
         boardPatternLines=new BoardPatternLine[]{
-            new BoardPatternLine(1,boardWall,tileBox),
-            new BoardPatternLine(2,boardWall,tileBox),
-            new BoardPatternLine(3,boardWall,tileBox),
-            new BoardPatternLine(4,boardWall,tileBox),
-            new BoardPatternLine(5,boardWall,tileBox)
+            new BoardPatternLine(1,boardWall,tileBox, boardFloorLine),
+            new BoardPatternLine(2,boardWall,tileBox, boardFloorLine),
+            new BoardPatternLine(3,boardWall,tileBox, boardFloorLine),
+            new BoardPatternLine(4,boardWall,tileBox, boardFloorLine),
+            new BoardPatternLine(5,boardWall,tileBox, boardFloorLine)
         };
         currentPoints=0;
         startingPlayerMarker=false;
@@ -32,8 +43,6 @@ public class Board {
     public int getNumberOfFilledRows(){
         return boardWall.getNumberOfFullRows();
     }
-    // actually args should have list of lines and amounts, if u want to put tiles in different spots
-    // also value 6 should be to put in floor line ig
     public void playTurn(CenterOfTable centerOfTable,Factory factory, TileType type, int line){
         if(factory!=null){
             boardPatternLines[line].placeTiles(factory.takeTiles(type, centerOfTable));
@@ -45,5 +54,12 @@ public class Board {
         for (BoardPatternLine patternLine : boardPatternLines) {
             currentPoints+=patternLine.scoreRow();
         }
+        currentPoints+=boardFloorLine.calculateMinusPoints();
     }
+    public void scoreFinalPoints(){
+        currentPoints+=2*boardWall.getNumberOfFullRows();
+        currentPoints+=7*boardWall.getNumberOfFullCols();
+        currentPoints+=10*boardWall.getNumberOfFullDiagonals();
+    }
+
 }
