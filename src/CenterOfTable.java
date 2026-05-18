@@ -7,6 +7,9 @@ public class CenterOfTable {
         this.tiles=new ArrayList<>();
         tiles.add(new Tile(TileType.startingPlayerMarker));
     }
+    public boolean isEmpty(){
+        return tiles.isEmpty();
+    }
     public void addTiles(List<Tile> tilesToAdd){
         tiles.addAll(tilesToAdd);
     }

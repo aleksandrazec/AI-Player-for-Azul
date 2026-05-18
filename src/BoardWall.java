@@ -28,7 +28,7 @@ public class BoardWall {
      * @param tile object of the tile being transferred
      * @return number of points gotten from the placement of the tile
      */
-    private int placeTile(int row, Tile tile){
+    public int placeTile(int row, Tile tile){
         if(tile.type==TileType.startingPlayerMarker){
             return 0;
         }
@@ -53,8 +53,24 @@ public class BoardWall {
         }
         return calculateNumOfHorizontal(row,col) + calculateNumOfVertical(row,col);
     }
-    public boolean getRowFinished(){
+    public boolean isRowFinished(){
         return rowFinished;
+    }
+    public int getNumberOfFullRows(){
+        int num=0;
+        boolean temp;
+        for (int i = 0; i < wall.length; i++) {
+            temp=true;
+            for (int j = 0; j < wall[0].length; j++) {
+                if(wall[i][j]==0){
+                    temp=false;
+                }
+            }
+            if(temp){
+                num++;
+            }
+        }
+        return num;
     }
     private int calculateNumOfVertical(int row, int col){
         int points=0;

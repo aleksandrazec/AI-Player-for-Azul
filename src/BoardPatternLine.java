@@ -5,10 +5,12 @@ public class BoardPatternLine {
     private List<Tile> patternLine;
     private final int length;
     private final BoardWall boardWall;
-    public BoardPatternLine(int length, BoardWall wall){
+    private final TileBox tileBox;
+    public BoardPatternLine(int length, BoardWall wall, TileBox tileBox){
         patternLine=new ArrayList<Tile>();
         this.length=length;
         this.boardWall =wall;
+        this.tileBox=tileBox;
     }
 
     /**
@@ -37,9 +39,16 @@ public class BoardPatternLine {
     public boolean isFull(){
         return patternLine.size()==length;
     }
-//    fix ts it doesn't make sense
     public TileType getType(){
         return patternLine.get(0).type;
     }
-
+    public int scoreRow(){
+        int value=0;
+        if(isFull()){
+            value=boardWall.placeTile(length,patternLine.remove(0));
+            tileBox.addTiles(patternLine);
+            patternLine.clear();
+        }
+        return value;
+    }
 }

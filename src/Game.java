@@ -1,3 +1,4 @@
+import java.security.SecureRandom;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -8,6 +9,8 @@ public class Game {
     private final CenterOfTable centerOfTable;
     private final TilesBag tilesBag;
     private final TileBox tileBox;
+    private boolean playerOnesTurn;
+    private final SecureRandom random;
     public Game(){
         this.tileBox=new TileBox();
         this.tilesBag=new TilesBag(tileBox);
@@ -15,6 +18,9 @@ public class Game {
         this.factories=initializeFactories();
         this.playerOne=new Board(tileBox);
         this.playerTwo=new Board(tileBox);
+        random = new SecureRandom();
+//        playerOnesTurn= random.nextBoolean();
+        playerOnesTurn=true;
     }
     private ArrayList<Factory> initializeFactories(){
         ArrayList<Factory> factoriesList =new ArrayList<>();
@@ -22,5 +28,14 @@ public class Game {
             factoriesList.add(new Factory(tilesBag.pullFourTiles()));
         }
         return factoriesList;
+    }
+    public boolean isPlayerOnesTurn(){
+        return playerOnesTurn;
+    }
+    public GameState getCurrentGameState(){
+        return new GameState(playerOne, playerTwo, factories, centerOfTable);
+    }
+    public List<GameState> getPossibleGameStates(){
+        return new ArrayList<>();
     }
 }
