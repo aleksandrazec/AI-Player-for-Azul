@@ -34,6 +34,52 @@ public class Game {
         playerOne=new Board(this, true);
         playerTwo=new Board(this,false);
     }
+
+    public Game(int[] tileBox, int[] tileBag, int[][] factories, int[] centerOfTable, boolean playerOnesTurn) {
+        random=new SecureRandom();
+        this.tileBox = tileBox;
+        this.tileBag = tileBag;
+        this.factories = factories;
+        this.centerOfTable = centerOfTable;
+        this.playerOnesTurn = playerOnesTurn;
+    }
+    private void assignPlayers(Board playerOne, Board playerTwo){
+        this.playerOne=playerOne;
+        this.playerTwo=playerTwo;
+    }
+    public Game copy(){
+        Game gameCopy= new Game(tileBox, tileBag, factories, centerOfTable, playerOnesTurn);
+        gameCopy.assignPlayers(playerOne.copy(gameCopy), playerTwo.copy(gameCopy));
+        return gameCopy;
+    }
+
+    protected Game getCurrentGameState(){
+        return this.copy();
+    }
+
+    protected boolean playTurn(int factoryIndex, int typeToTake, int patternLine){
+        if(factoriesAreEmpty() && tileArrayIsEmpty(centerOfTable)){
+            if(playerOne.isRowFinished() || playerTwo.isRowFinished()){
+                playerOne.scoreFinalPoints();
+                playerTwo.scoreFinalPoints();
+                return false;
+            }else{
+                playerOne.scorePoints();
+                playerTwo.scorePoints();
+                for (int i = 0; i < 5; i++) {
+                    factories[i]=pullFourTilesFromBag();
+                }
+                centerOfTable[0]=1;
+                return true;
+            }
+        }
+        if(playerOnesTurn){
+            playerOne.playTurn(factoryIndex, typeToTake, patternLine);
+        }else{
+            playerTwo.playTurn(factoryIndex, typeToTake, patternLine);
+        }
+        return true;
+    }
     protected void setPlayerOnesTurn(boolean value){
         playerOnesTurn=value;
     }
@@ -111,5 +157,21 @@ public class Game {
         }
         addTilesToCenterOfTable(tilesForCenter);
         return takenTiles;
+    }
+    protected boolean factoriesAreEmpty(){
+        for (int i = 0; i < 5; i++) {
+            if(!factoryIsEmpty(i)){
+                 return false;
+            }
+        }
+        return true;
+    }
+    protected boolean factoryIsEmpty(int factoryIndex){
+        for (int i = 0; i < 6; i++) {
+            if (factories[factoryIndex][i]>0){
+                return false;
+            }
+        }
+        return true;
     }
 }

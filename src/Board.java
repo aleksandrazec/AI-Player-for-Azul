@@ -7,7 +7,7 @@ public class Board {
     private boolean rowFinished;
     // should have max sum 7, has to reject access right away
     private int[] floorLine;
-    // should have 5 pattern lines, of lengths 1:5
+    // should have 5 pattern lines, of sums 1:5
     private int[][] patternLines;
     public Board(Game game, boolean playerOne) {
         this.game = game;
@@ -17,6 +17,33 @@ public class Board {
         rowFinished = false;
         floorLine = new int[6];
         patternLines = new int[5][6];
+    }
+
+    public Board(int currentPoints, Game game, boolean isPlayerOne, int[][] wall, boolean rowFinished, int[] floorLine, int[][] patternLines) {
+        this.currentPoints = currentPoints;
+        this.game = game;
+        this.isPlayerOne = isPlayerOne;
+        this.wall = wall;
+        this.rowFinished = rowFinished;
+        this.floorLine = floorLine;
+        this.patternLines = patternLines;
+    }
+    public Board copy(Game game1){
+        return new Board(currentPoints, game1, isPlayerOne, wall, rowFinished, floorLine, patternLines);
+    }
+    protected void playTurn(int factoryIndex, int typeToTake, int patternLine){
+        if(factoryIndex==5){
+            int[] takenTiles= game.takeTilesFromCenterOfTable(typeToTake);
+            if(takenTiles[0]==1){
+                takenTiles[0]=0;
+                int[] minusPoints=new int[6];
+                minusPoints[0]=1;
+                addMinusPoints(minusPoints);
+            }
+             placeTilesOnPatternLine(patternLine, takenTiles);
+        }else{
+            placeTilesOnPatternLine(patternLine, game.takeTilesFromFactory(factoryIndex, typeToTake));
+        }
     }
     protected int getCurrentPoints() {
         return currentPoints;
@@ -50,6 +77,36 @@ public class Board {
         }
         return full;
     }
+    protected boolean placeTilesOnPatternLine(int index, int[] tiles){
+        int type=0;
+        for (int i = 1; i < 6; i++) {
+            if(tiles[i]>0){
+                type=i;
+                break;
+            }
+        }
+        int amount=tiles[type];
+        if(wallRowContainsTile(index, type) || type==0){
+            return false;
+        }
+        if(!tileArrayIsEmpty(patternLines[index])){
+            if(getTypeOfPatternLine(index)!=type){
+                return false;
+            }
+        }
+        if(patternLineIsFull(index)){
+            return false;
+        }
+        int numOfExtraTiles=getTotalTilesInArray(patternLines[index])+amount-index;
+        if(numOfExtraTiles>0){
+            int[] extraTiles = new int[6];
+            extraTiles[type]=numOfExtraTiles;
+            amount-=numOfExtraTiles;
+            addMinusPoints(extraTiles);
+        }
+        patternLines[index][type]+=amount;
+        return true;
+    }
     protected int getTypeOfPatternLine(int index){
         int type=-1;
         for (int i = 1; i < 6; i++) {
@@ -60,6 +117,7 @@ public class Board {
         }
         return type;
     }
+
     private int scoreRow(int index){
         int value=0;
         if(getTotalTilesInArray(patternLines[index])==index){
@@ -131,7 +189,7 @@ public class Board {
         }
         return col;
     }
-    public int getNumberOfFullRows(){
+    protected int getNumberOfFullRows(){
         int num=0;
         boolean temp;
         for (int i = 0; i < wall.length; i++) {
@@ -147,7 +205,7 @@ public class Board {
         }
         return num;
     }
-    public int getNumberOfFullCols(){
+    protected int getNumberOfFullCols(){
         int[] colAmount = new int[5];
         for (int i = 0; i < wall.length; i++) {
             for (int j = 0; j < wall[0].length; j++) {
@@ -158,11 +216,22 @@ public class Board {
         }
         return colAmount[0]+colAmount[1]+colAmount[2]+colAmount[3]+colAmount[4];
     }
-    public int getNumberOfFullDiagonals(){
-
-        //    TO BE IMPLEMENTED
-
-        return 0;
+    protected int getNumberOfFullDiagonals(){
+        int[] tilesPerColor = new int[6];
+        for (int i = 0; i < wall.length; i++) {
+            for (int j = 0; j < wall[i].length; j++) {
+                if(wall[i][j]==1){
+                    tilesPerColor[StaticGameData.wallPattern[i][j]]++;
+                }
+            }
+        }
+        int num=0;
+        for (int i = 1; i < 6; i++) {
+            if(tilesPerColor[i]==5){
+                num++;
+            }
+        }
+        return num;
     }
     /**
      *
@@ -170,7 +239,7 @@ public class Board {
      * @param type of tile being transferred
      * @return number of points gotten from the placement of the tile
      */
-    public int placeTileOnWall(int row, int type){
+    protected int placeTileOnWall(int row, int type){
         if(type==0){
             return 0;
         }
