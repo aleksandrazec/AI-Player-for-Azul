@@ -1,7 +1,7 @@
 public class Board {
     private int currentPoints;
     private Game game;
-    private final boolean isPlayerOne;
+    private final boolean isMax;
     // should be 5 x 5, true if tile is set, false otherwise
     private int[][] wall;
     private boolean rowFinished;
@@ -11,7 +11,7 @@ public class Board {
     private int[][] patternLines;
     public Board(Game game, boolean playerOne) {
         this.game = game;
-        this.isPlayerOne =playerOne;
+        this.isMax =playerOne;
         currentPoints = 0;
         wall = new int[5][5];
         rowFinished = false;
@@ -22,16 +22,16 @@ public class Board {
     public Board(int currentPoints, Game game, boolean isPlayerOne, int[][] wall, boolean rowFinished, int[] floorLine, int[][] patternLines) {
         this.currentPoints = currentPoints;
         this.game = game;
-        this.isPlayerOne = isPlayerOne;
+        this.isMax = isPlayerOne;
         this.wall = wall;
         this.rowFinished = rowFinished;
         this.floorLine = floorLine;
         this.patternLines = patternLines;
     }
     public Board copy(Game game1){
-        return new Board(currentPoints, game1, isPlayerOne, wall, rowFinished, floorLine, patternLines);
+        return new Board(currentPoints, game1, isMax, wall, rowFinished, floorLine, patternLines);
     }
-    protected void playTurn(int factoryIndex, int typeToTake, int patternLine){
+    protected boolean playTurn(int factoryIndex, int typeToTake, int patternLine){
         if(factoryIndex==5){
             int[] takenTiles= game.takeTilesFromCenterOfTable(typeToTake);
             if(takenTiles[0]==1){
@@ -40,9 +40,9 @@ public class Board {
                 minusPoints[0]=1;
                 addMinusPoints(minusPoints);
             }
-             placeTilesOnPatternLine(patternLine, takenTiles);
+             return placeTilesOnPatternLine(patternLine, takenTiles);
         }else{
-            placeTilesOnPatternLine(patternLine, game.takeTilesFromFactory(factoryIndex, typeToTake));
+            return placeTilesOnPatternLine(patternLine, game.takeTilesFromFactory(factoryIndex, typeToTake));
         }
     }
     protected int getCurrentPoints() {
@@ -164,7 +164,7 @@ public class Board {
             minusPoints+= StaticGameData.floorLineValues[i];
         }
         if(floorLine[0]==1){
-            game.setPlayerOnesTurn(isPlayerOne);
+            game.setMaxTurn(isMax);
             floorLine[0]=0;
         }
         game.addTilesToTileBox(floorLine);
