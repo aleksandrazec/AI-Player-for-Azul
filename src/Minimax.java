@@ -3,7 +3,11 @@ import java.util.List;
 public class Minimax {
     // call initially with alpha=-inf, and beta=+inf
     protected int minimax(Game gameState, int depth, int alpha, int beta, boolean isMax){
-        if(gameState.isTerminal() || depth<=0){
+        System.out.println("Minimax at depth "+depth);
+        if(gameState.isTerminal()){
+            return gameState.getUtilityValue(isMax);
+        }
+        if(depth<=0){
             return gameState.evaluateState();
         }
         if(isMax){

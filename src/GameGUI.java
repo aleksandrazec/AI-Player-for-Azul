@@ -1,16 +1,27 @@
 import javax.swing.*;
-import javax.swing.border.Border;
 import javax.swing.border.EmptyBorder;
 import java.awt.*;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
 import java.awt.image.BufferedImage;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
 public class GameGUI extends JFrame {
+    int selectedTileType=-1;
+//    0-4 are factories, 5 is center
+    int selectedTileFactory=-1;
+    Game game;
     JPanel panel;
     JPanel gameEnvironment;
     List<Tile>[] factories;
+    JPanel[] factoryPanels;
+    JPanel upperFactories;
+    JPanel lowerFactories;
+    JPanel centerPanel;
+    JPanel centerGrid;
+
     List<Tile> centerOfTable;
     JPanel maxBoard;
     int maxTotalPoints;
@@ -34,7 +45,7 @@ public class GameGUI extends JFrame {
     ImageIcon redTile = scaleImageToTileSize(new ImageIcon("assets/red_tile.png"));
     ImageIcon yellowTile =  scaleImageToTileSize(new ImageIcon("assets/yellow_tile.png"));
     ImageIcon placeholderTile = scaleImageToTileSize(new ImageIcon("assets/placeholder_tile.png"));
-    private EmptyBorder emptyBorder;
+    private final EmptyBorder emptyBorder;
 
     private ImageIcon scaleImageToTileSize(ImageIcon icon) {
         Image scaledImage = icon.getImage().getScaledInstance(TILE_SIZE, TILE_SIZE, Image.SCALE_SMOOTH);
@@ -51,12 +62,21 @@ public class GameGUI extends JFrame {
             default -> placeholderTile;
         };
     }
-    public class Tile{
+    public class Tile implements ActionListener {
         protected JLabel label;
         protected JButton button;
         int type;
         boolean isButton;
-        public Tile(int type, boolean inactive, boolean isButton){
+//        0=factory,1=center,2=pattern line,3=wall,4=floor line
+        int category;
+//        0-4 factories, 5 center
+        int factory=-1;
+        int patternLine=-1;
+//        0-min, 1-max, 2-unassigned
+        int belongsTo;
+        public Tile(int type, boolean inactive, boolean isButton, int category, int belongsTo){
+            this.belongsTo=belongsTo;
+            this.category=category;
             this.isButton=isButton;
             if(isButton){
                 this.button=new JButton();
@@ -67,6 +87,7 @@ public class GameGUI extends JFrame {
                 this.button.setPreferredSize(new Dimension(TILE_SIZE, TILE_SIZE));
                 this.button.setMinimumSize(new Dimension(TILE_SIZE, TILE_SIZE));
                 this.button.setMaximumSize(new Dimension(TILE_SIZE, TILE_SIZE));
+                this.button.addActionListener(this);
             }else {
                 this.label = new JLabel();
                 this.label.setPreferredSize(new Dimension(TILE_SIZE, TILE_SIZE));
@@ -81,6 +102,32 @@ public class GameGUI extends JFrame {
             }else{
                 makeActive();
             }
+        }
+        @Override
+        public void actionPerformed(ActionEvent e) {
+            if(!game.maxTurn){
+                if(selectedTileType==-1){
+                    if(factory!=-1){
+                        selectedTileType=type;
+                        selectedTileFactory=factory;
+                        System.out.println("Selected "+type+" tile from "+factory+" factory");
+                    }
+                }else{
+                    if(patternLine!=-1 && belongsTo==0){
+//                    if(patternLine!=-1){
+                        playTurn(selectedTileFactory,selectedTileType,patternLine);
+                    }
+                    selectedTileFactory=-1;
+                    selectedTileType=-1;
+                }
+            }
+        }
+        public void setBelongsTo(int belongsTo){this.belongsTo=belongsTo;}
+        public void setFactory(int factory){
+            this.factory=factory;
+        }
+        public void setPatternLine(int patternLine){
+            this.patternLine=patternLine;
         }
         public void disableButton(){
             button.setEnabled(false);
@@ -147,7 +194,6 @@ public class GameGUI extends JFrame {
             }
             return result;
         }
-
         public void makeEmpty(){
             if(isButton){
                 button.setIcon(getTileImage(-1));
@@ -156,12 +202,206 @@ public class GameGUI extends JFrame {
             }
         }
     }
-    public GameGUI(int[][] factories) throws IOException{
+    public void playTurn(int selectedTileFactory, int selectedTileType, int patternLine){
+        if(game.playTurn(selectedTileFactory,selectedTileType,patternLine)){
+            updateGameState(selectedTileFactory);
+        }else{
+            JOptionPane.showMessageDialog(null, "This isn't a legal move.", "Message", JOptionPane.INFORMATION_MESSAGE);
+        }
+        this.selectedTileType = -1;
+        this.selectedTileFactory = -1;
+    }
+
+    private void updateGameState(int selectedTileFactory){
+        updateFactories(selectedTileFactory);
+        updateCenterOfTable();
+        updatePatternLines(true);
+        updatePatternLines(false);
+        updateWalls(true);
+        updateWalls(false);
+        updateFloorLines(true);
+        updateFloorLines(false);
+        updateScores();
+        panel.revalidate();
+        panel.repaint();
+    }
+
+    private void updateFactories(int selectedTileFactory){
+        int[][] gameFactories=game.getFactories();
+        for (int i = 0; i < 5; i++) {
+            JPanel factoryPanel=factoryPanels[i];
+            factoryPanel.removeAll();
+
+            GridBagConstraints gbc = new GridBagConstraints();
+            gbc.fill=GridBagConstraints.BOTH;
+            gbc.weightx=1.0;
+            gbc.weighty=1.0;
+            gbc.insets=new Insets(2,2,2,2);
+
+            factories[i].clear();
+            int row=0;
+            int col=0;
+
+            if(getTotalTiles(gameFactories[i])!=0){
+
+            for (int j = 0; j < gameFactories[i].length; j++) {
+                for (int k = 0; k < gameFactories[i][j]; k++) {
+                    Tile tile=new Tile(j,false,true,0,2);
+                    gbc.gridx=col;
+                    gbc.gridy=row;
+                    factoryPanel.add(tile.button,gbc);
+                    factories[i].add(tile);
+                    tile.setFactory(i);
+
+                    col++;
+                    if(col>=2){
+                        col=0;
+                        row++;
+                    }
+                }
+            }
+            }else {
+                row = 0;
+                col = 0;
+                for (int j = 0; j < 4; j++) {
+                    Tile emptyTile = new Tile(-1, true, true, 0, 2);
+                    gbc.gridx = col;
+                    gbc.gridy = row;
+                    factoryPanel.add(emptyTile.button, gbc);
+                    factories[i].add(emptyTile);
+                    emptyTile.setFactory(i);
+
+                    col++;
+                    if (col >= 2) {
+                        col = 0;
+                        row++;
+                    }
+                }
+
+            }
+            factoryPanel.revalidate();
+            factoryPanel.repaint();
+        }
+    }
+    private void updateCenterOfTable(){
+        int[] centerData = game.getCenterOfTable();
+        centerGrid.removeAll();
+        centerOfTable.clear();
+
+        int tileIndex=0;
+        int totalTiles=getTotalTiles(centerData);
+
+        for (int i = 0; i < centerData.length; i++) {
+            int count=centerData[i];
+            for (int j = 0; j < count && tileIndex<16; j++) {
+                Tile tile=new Tile(i, false, true, 1, 2);
+                centerGrid.add(tile.button);
+                centerOfTable.add(tile);
+                tile.setFactory(5);
+                tileIndex++;
+            }
+        }
+
+        while(tileIndex<16){
+            Tile emptyTile=new Tile(-1,false,true,1,2);
+            emptyTile.makeEmpty();
+            centerGrid.add(emptyTile.button);
+            centerOfTable.add(emptyTile);
+            emptyTile.setFactory(-1);
+            tileIndex++;
+        }
+        centerGrid.revalidate();
+        centerGrid.repaint();
+    }
+    private void updatePatternLines(boolean isMax) {
+        Board board = isMax ? game.getMax() : game.getMin();
+        Tile[][] patternLines = isMax ? maxPatternLines : minPatternLines;
+        int[][] boardPatternLines = board.getPatternLines();
+
+        for (int i = 0; i < 5; i++) {
+            int tileType = getTypeFromPatternLine(boardPatternLines[i]);
+            int totalTiles = getTotalTiles(boardPatternLines[i]);
+
+            int temp = 0;
+            for (int j = 4; j >= 0 && temp<(i+1); j--) {
+                if (StaticGameData.patternLinePattern[i][j] != 0 && patternLines[i][j] != null) {
+                    Tile tile = patternLines[i][j];
+                    if (totalTiles>temp && tileType > 0) {
+                        tile.type = tileType;
+                        tile.makeActive();
+                    } else {
+                        tile.type = -1;
+                        tile.makeEmpty();
+                    }
+                    temp++;
+                }
+            }
+        }
+    }
+    private void updateWalls(boolean isMax){
+        Board board=isMax ? game.getMax() : game.getMin();
+        Tile[][] wall = isMax ? maxWall : minWall;
+        int[][] boardWall = board.getWall();
+
+        for (int i = 0; i < 5; i++) {
+            for (int j = 0; j < 5; j++) {
+                if(boardWall[i][j]==1 && wall[i][j]!=null){
+                    wall[i][j].makeActive();
+                }else{
+                    wall[i][j].makeInactive();
+                }
+            }
+        }
+    }
+    private void updateFloorLines(boolean isMax){
+        Board board = isMax ? game.getMax() : game.getMin();
+        Tile[] floorLine = isMax ? maxMinusPoints : minMinusPoints;
+        int[] boardFloorLine = board.getFloorLine();
+
+        for (Tile tile: floorLine){
+            tile.type=-1;
+            tile.makeEmpty();
+        }
+        int tileIndex=0;
+        for (int i = 0; i < boardFloorLine.length; i++) {
+            for (int j = 0; j < boardFloorLine[i] && tileIndex<floorLine.length; j++) {
+                floorLine[tileIndex].type=i;
+                floorLine[tileIndex].makeActive();
+                tileIndex++;
+            }
+        }
+    }
+    private void updateScores(){
+        maxTotalPoints= game.getMax().getCurrentPoints();
+        minTotalPoints=game.getMin().getCurrentPoints();
+        maxTotalPointsLabel.setText(Integer.toString(maxTotalPoints));
+        minTotalPointsLabel.setText(Integer.toString(minTotalPoints));
+    }
+    private int getTypeFromPatternLine(int[] patternLine) {
+        for (int i = 1; i < patternLine.length; i++) {
+            if (patternLine[i] > 0) {
+                return i;
+            }
+        }
+        return -1;
+    }
+    private int getTotalTiles(int[] tiles) {
+        int total = 0;
+        for (int i = 1; i < tiles.length; i++) {
+            total += tiles[i];
+        }
+        return total;
+    }
+
+
+    public GameGUI(Game game,int[][] factories) throws IOException{
+        this.game=game;
         this.centerOfTable=new ArrayList<>();
         this.factories=new List[5];
         for (int i = 0; i < 5; i++) {
             this.factories[i]=new ArrayList<>();
         }
+        this.factoryPanels= new JPanel[5];
         this.maxWall=new Tile[5][5];
         this.minWall=new Tile[5][5];
         this.maxPatternLines=new Tile[5][5];
@@ -203,6 +443,7 @@ public class GameGUI extends JFrame {
         gbc.gridx = 2;
         gbc.weightx = 0.35;
         main.add(minBoard, gbc);
+
         return main;
     }
     public JPanel createGameEnvironment(int[][] factories){
@@ -213,7 +454,7 @@ public class GameGUI extends JFrame {
         gbc.weighty = 1.0;
         gbc.insets = new Insets(5, 5, 5, 5);
 
-        JPanel upperFactories = new JPanel(new GridBagLayout());
+        upperFactories = new JPanel(new GridBagLayout());
         GridBagConstraints upperGbc = new GridBagConstraints();
         upperGbc.fill = GridBagConstraints.BOTH;
         upperGbc.weightx = 1.0;
@@ -223,10 +464,11 @@ public class GameGUI extends JFrame {
         for (int i = 0; i < 3; i++) {
             upperGbc.gridx = i;
             JPanel factory = createFactory(factories[i], i);
+            factoryPanels[i] = factory;
             upperFactories.add(factory, upperGbc);
         }
 
-        JPanel lowerFactories = new JPanel(new GridBagLayout());
+        lowerFactories = new JPanel(new GridBagLayout());
         GridBagConstraints lowerGbc = new GridBagConstraints();
         lowerGbc.fill = GridBagConstraints.BOTH;
         lowerGbc.weightx = 1.0;
@@ -236,27 +478,30 @@ public class GameGUI extends JFrame {
         for (int i = 3; i < 5; i++) {
             lowerGbc.gridx = (i - 3);
             JPanel factory = createFactory(factories[i], i);
+            factoryPanels[i] = factory;
             lowerFactories.add(factory, lowerGbc);
         }
 
 
 //        because center can have maximum 16 tiles
-        JPanel center = new JPanel(new BorderLayout());
-        center.setBorder(BorderFactory.createTitledBorder(emptyBorder,"Center of Table"));
-        center.setBackground(background);
+        centerPanel = new JPanel(new BorderLayout());
+        centerPanel.setBorder(BorderFactory.createTitledBorder(emptyBorder,"Center of Table"));
+        centerPanel.setBackground(background);
 
-        JPanel centerGrid = new JPanel(new GridLayout(2, 8, 5, 5));
+        centerGrid = new JPanel(new GridLayout(2, 8, 5, 5));
         centerGrid.setBackground(background);
-        Tile oneTile=new Tile(0, false,true);
+        Tile oneTile=new Tile(0, false,true,1,2);
         centerGrid.add(oneTile.button);
         centerOfTable.add(oneTile);
+        oneTile.setFactory(5);
         for (int i = 1; i < 16; i++) {
-            Tile tile = new Tile(-1,false, true);
+            Tile tile = new Tile(-1,false, true,1,2);
 //            tile.disableButton();
             centerGrid.add(tile.button);
             centerOfTable.add(tile);
+            tile.setFactory(5);
         }
-        center.add(centerGrid, BorderLayout.CENTER);
+        centerPanel.add(centerGrid, BorderLayout.CENTER);
 
         gbc.gridx = 0;
         gbc.gridy = 0;
@@ -265,7 +510,7 @@ public class GameGUI extends JFrame {
 
         gbc.gridy = 1;
         gbc.weighty = 0.2;
-        gameEnvironment.add(center, gbc);
+        gameEnvironment.add(centerPanel, gbc);
 
         gbc.gridy = 2;
         gbc.weighty = 0.4;
@@ -287,11 +532,12 @@ public class GameGUI extends JFrame {
         int row = 0, col = 0;
         for (int i = 0; i < 6; i++) {
             for (int j = 0; j < factory[i]; j++) {
-                Tile tile = new Tile(i, false, true);
+                Tile tile = new Tile(i, false, true,0,2);
                 gbc.gridx = col;
                 gbc.gridy = row;
                 factoryPanel.add(tile.button, gbc);
                 factories[factoryIndex].add(tile);
+                tile.setFactory(factoryIndex);
 
                 col++;
                 if (col >= 2) {
@@ -309,7 +555,7 @@ public class GameGUI extends JFrame {
         gbc.fill = GridBagConstraints.BOTH;
         gbc.insets = new Insets(5, 5, 5, 5);
 
-        String playerName = isMax ? "You" : "Bot";
+        String playerName = isMax ? "Bot" : "You";
         board.setBorder(BorderFactory.createTitledBorder(emptyBorder,playerName));
         board.setBackground(background);
 
@@ -334,13 +580,14 @@ public class GameGUI extends JFrame {
             for (int i = 0; i < 5; i++) {
                 for (int j = 0; j < 5; j++) {
                     if(StaticGameData.patternLinePattern[i][j]==0){
-                        Tile tile = new Tile(-1, false, false);
+                        Tile tile = new Tile(-1, false, false,2,1);
                         tile.setColor(background);
                         patternGrid.add(tile.label);
                         maxPatternLines[i][j]=tile;
                     }else{
-                        Tile tile = new Tile(-1, false, true);
+                        Tile tile = new Tile(-1, false, true,2,1);
                         patternGrid.add(tile.button);
+                        tile.setPatternLine(i);
                         maxPatternLines[i][j]=tile;
                     }
                 }
@@ -349,13 +596,14 @@ public class GameGUI extends JFrame {
             for (int i = 0; i < 5; i++) {
                 for (int j = 0; j < 5; j++) {
                     if(StaticGameData.patternLinePattern[i][j]==0){
-                        Tile tile = new Tile(-1, false, false);
+                        Tile tile = new Tile(-1, false, false,2,0);
                         tile.setColor(background);
                         patternGrid.add(tile.label);
                         minPatternLines[i][j]=tile;
                     }else{
-                        Tile tile = new Tile(-1, false, true);
+                        Tile tile = new Tile(-1, false, true,2,0);
                         patternGrid.add(tile.button);
+                        tile.setPatternLine(i);
                         minPatternLines[i][j]=tile;
                     }
                 }
@@ -372,7 +620,7 @@ public class GameGUI extends JFrame {
         if(isMax) {
             for (int i = 0; i < 5; i++) {
                 for (int j = 0; j < 5; j++) {
-                    Tile tile = new Tile(StaticGameData.wallPattern[i][j], true, false);
+                    Tile tile = new Tile(StaticGameData.wallPattern[i][j], true, false,3,1);
                     wallGrid.add(tile.label);
                     maxWall[i][j] = tile;
                 }
@@ -380,7 +628,7 @@ public class GameGUI extends JFrame {
         }else{
             for (int i = 0; i < 5; i++) {
                 for (int j = 0; j < 5; j++) {
-                    Tile tile = new Tile(StaticGameData.wallPattern[i][j], true, false);
+                    Tile tile = new Tile(StaticGameData.wallPattern[i][j], true, false,3,0);
                     wallGrid.add(tile.label);
                     minWall[i][j] = tile;
                 }
@@ -416,13 +664,13 @@ public class GameGUI extends JFrame {
 
         if(isMax){
             for (int i = 0; i < 7; i++) {
-                Tile tile=new Tile(-1, false, false);
+                Tile tile=new Tile(-1, false, false,4,1);
                 minusPointsTiles.add(tile.label);
                 maxMinusPoints[i]=tile;
             }
         }else{
             for (int i = 0; i < 7; i++) {
-                Tile tile=new Tile(-1, false, false);
+                Tile tile=new Tile(-1, false, false,4,0);
                 minusPointsTiles.add(tile.label);
                 minMinusPoints[i]=tile;
             }

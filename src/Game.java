@@ -2,6 +2,7 @@ import java.io.IOException;
 import java.security.SecureRandom;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Random;
 
 public class Game {
     private Board max;
@@ -14,13 +15,13 @@ public class Game {
     private int[][] factories;
     // center of table has starting place marker when initialized
     private int[] centerOfTable;
-    private boolean maxTurn;
+    protected boolean maxTurn;
     private SecureRandom random;
     private boolean isFinished;
     GameGUI gameGUI;
     public Game(){
         random=new SecureRandom();
-        maxTurn =true;
+        maxTurn =false;
         isFinished=false;
 
         tileBox=new int[6];
@@ -41,7 +42,7 @@ public class Game {
         min =new Board(this,false);
 
         try {
-            gameGUI=new GameGUI(factories);
+            gameGUI=new GameGUI(this,factories);
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
@@ -61,12 +62,26 @@ public class Game {
         this.min =playerTwo;
     }
     public Game copy(){
-        Game gameCopy= new Game(tileBox, tileBag, factories, centerOfTable, maxTurn);
+        int[] tileBoxCopy = new int[6];
+        System.arraycopy(tileBox, 0, tileBoxCopy, 0, tileBox.length);
+
+        int[] tileBagCopy = new int[6];
+        System.arraycopy(tileBag, 0, tileBagCopy, 0, tileBag.length);
+
+        int[][] factoriesCopy = new int[5][6];
+        for (int i = 0; i < 5; i++) {
+            System.arraycopy(factories[i], 0, factoriesCopy[i], 0, factories[i].length);
+        }
+
+        int[] centerOfTableCopy = new int[6];
+        System.arraycopy(centerOfTable, 0, centerOfTableCopy, 0, centerOfTable.length);
+
+        Game gameCopy = new Game(tileBoxCopy, tileBagCopy, factoriesCopy, centerOfTableCopy, maxTurn);
         gameCopy.assignPlayers(max.copy(gameCopy), min.copy(gameCopy));
         return gameCopy;
     }
     protected int evaluateState(){
-        return 1;
+        return random.nextInt(-1000,1000);
     }
     protected boolean isTerminal(){
         if(isFinished){
@@ -115,7 +130,7 @@ public class Game {
             };
         }
     }
-    protected List<Game> getPotentialGameStates(){
+    protected ArrayList<Game> getPotentialGameStates(){
         ArrayList<Game> potentialStates = new ArrayList<>();
         Game potentialState;
         if(!centerIsEmpty()){
@@ -126,6 +141,7 @@ public class Game {
                     for (int j = 0; j < 5; j++) {
                         potentialState=this.copy();
                         if(potentialState.playTurn(5,i,j)){
+                            System.out.println(5+" "+i+" "+j);
                             potentialStates.add(potentialState);
                         }
                     }
@@ -133,7 +149,7 @@ public class Game {
             }
         }
 //        for each factory possible
-        for (int i = 0; i < 6; i++) {
+        for (int i = 0; i < 5; i++) {
             if(!factoryIsEmpty(i)){
 //            for each type of tile in factory
                 for (int j = 0; j < 6; j++) {
@@ -142,6 +158,7 @@ public class Game {
                         for (int k = 0; k < 5; k++) {
                             potentialState=this.copy();
                             if(potentialState.playTurn(i,j,k)){
+                                System.out.println(i+" "+j+" "+k);
                                 potentialStates.add(potentialState);
                             }
                         }
@@ -151,9 +168,58 @@ public class Game {
         }
         return potentialStates;
     }
+    protected int[] findPotentialGameState(int index){
+        index=index+1;
+        Game potentialState;
+        if(!centerIsEmpty()){
+//            for each type of tile in center
+            for (int i = 0; i < 6; i++) {
+                if (centerOfTable[i]>0){
+//                    for each potential pattern line
+                    for (int j = 0; j < 5; j++) {
+                        potentialState=this.copy();
+                        if(potentialState.playTurn(5,i,j)){
+                            if(index==0){
+                                return new int[]{5,i,j};
+                            }else{
+                                index--;
+                            }
+                        }else{
+                            index--;
+                        }
+                    }
+                }
+            }
+        }
+//        for each factory possible
+        for (int i = 0; i < 5; i++) {
+            if(!factoryIsEmpty(i)){
+//            for each type of tile in factory
+                for (int j = 0; j < 6; j++) {
+                    if(factories[i][j]>0){
+//                        for each potential pattern line
+                        for (int k = 0; k < 5; k++) {
+                            potentialState=this.copy();
+                            if(potentialState.playTurn(i,j,k)){
+                                if(index==0){
+                                    return new int[]{i,j,k};
+                                }else{
+                                    index--;
+                                }
+                            }else{
+                                index--;
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        return new int[]{-1,-1,-1};
+    }
     protected Game getCurrentGameState(){
         return this.copy();
     }
+//    ISSUE IN playTurn() - refilling factories/center shouldn't be a separate move
     protected boolean playTurn(int factoryIndex, int typeToTake, int patternLine){
         if(factoriesAreEmpty() && tileArrayIsEmpty(centerOfTable)){
             if(this.isTerminal()){
@@ -169,10 +235,17 @@ public class Game {
             }
         }
         if(maxTurn){
-            return max.playTurn(factoryIndex, typeToTake, patternLine);
+            if(max.playTurn(factoryIndex, typeToTake, patternLine)){
+                maxTurn=!maxTurn;
+                return true;
+            }
         }else{
-            return min.playTurn(factoryIndex, typeToTake, patternLine);
+            if(min.playTurn(factoryIndex, typeToTake, patternLine)){
+                maxTurn=!maxTurn;
+                return true;
+            }
         }
+        return false;
     }
     protected void setMaxTurn(boolean value){
         maxTurn =value;
@@ -275,5 +348,28 @@ public class Game {
             }
         }
         return true;
+    }
+    protected int[][] getFactories(){
+        return this.factories;
+    }
+
+    public int[] getCenterOfTable() {
+        return centerOfTable;
+    }
+
+    public Board getMax() {
+        return max;
+    }
+
+    public Board getMin() {
+        return min;
+    }
+
+    public boolean isFinished() {
+        return isFinished;
+    }
+
+    public GameGUI getGameGUI() {
+        return gameGUI;
     }
 }

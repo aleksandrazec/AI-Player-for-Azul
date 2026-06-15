@@ -1,3 +1,5 @@
+import java.sql.SQLOutput;
+
 public class Board {
     private int currentPoints;
     private Game game;
@@ -29,7 +31,20 @@ public class Board {
         this.patternLines = patternLines;
     }
     public Board copy(Game game1){
-        return new Board(currentPoints, game1, isMax, wall, rowFinished, floorLine, patternLines);
+        int[][] wallCopy = new int[5][5];
+        for (int i = 0; i < 5; i++) {
+            System.arraycopy(wall[i], 0, wallCopy[i], 0, 5);
+        }
+
+        int[][] patternLinesCopy = new int[5][6];
+        for (int i = 0; i < 5; i++) {
+            System.arraycopy(patternLines[i], 0, patternLinesCopy[i], 0, 6);
+        }
+
+        int[] floorLineCopy = new int[6];
+        System.arraycopy(floorLine, 0, floorLineCopy, 0, 6);
+
+        return new Board(currentPoints, game1, isMax, wallCopy, rowFinished, floorLineCopy, patternLinesCopy);
     }
     protected boolean playTurn(int factoryIndex, int typeToTake, int patternLine){
         if(factoryIndex==5){
@@ -40,8 +55,10 @@ public class Board {
                 minusPoints[0]=1;
                 addMinusPoints(minusPoints);
             }
+//            System.out.println("placed tiles of type "+typeToTake+" on pattern line "+patternLine);
              return placeTilesOnPatternLine(patternLine, takenTiles);
         }else{
+//            System.out.println("placed tiles of type "+typeToTake+" on pattern line "+patternLine);
             return placeTilesOnPatternLine(patternLine, game.takeTilesFromFactory(factoryIndex, typeToTake));
         }
     }
@@ -70,7 +87,7 @@ public class Board {
     protected boolean patternLineIsFull(int index){
         boolean full=false;
         for (int i = 1; i < 6; i++) {
-            if(patternLines[index][i]==index){
+            if(patternLines[index][i]==(index+1)){
                 full=true;
                 break;
             }
@@ -86,7 +103,10 @@ public class Board {
             }
         }
         int amount=tiles[type];
-        if(wallRowContainsTile(index, type) || type==0){
+        if(type == 0){
+            return false;
+        }
+        if(wallRowContainsTile(index, type)){
             return false;
         }
         if(!tileArrayIsEmpty(patternLines[index])){
@@ -97,30 +117,30 @@ public class Board {
         if(patternLineIsFull(index)){
             return false;
         }
-        int numOfExtraTiles=getTotalTilesInArray(patternLines[index])+amount-index;
+        int numOfExtraTiles=patternLines[index][type]+amount-index-1;
         if(numOfExtraTiles>0){
             int[] extraTiles = new int[6];
             extraTiles[type]=numOfExtraTiles;
             amount-=numOfExtraTiles;
             addMinusPoints(extraTiles);
         }
+//        System.out.println("placing "+amount+" tiles of type "+type+" on pattern line "+(index+1));
         patternLines[index][type]+=amount;
+//        System.out.println(patternLines[index][type]);
         return true;
     }
     protected int getTypeOfPatternLine(int index){
-        int type=-1;
         for (int i = 1; i < 6; i++) {
             if(patternLines[index][i]>0){
-                type=i;
-                break;
+                return i;
             }
         }
-        return type;
+        return -1;
     }
 
     private int scoreRow(int index){
         int value=0;
-        if(getTotalTilesInArray(patternLines[index])==index){
+        if(getTotalTilesInArray(patternLines[index])==(index+1)){
             value=placeTileOnWall(index, getTypeOfPatternLine(index));
             patternLines[index][getTypeOfPatternLine(index)]--;
             game.addTilesToTileBox(patternLines[index]);
@@ -267,11 +287,11 @@ public class Board {
     private int calculateNumOfVertical(int row, int col){
         int points=0;
         int tempCol=col;
-        while(wall[row][tempCol-1]==1){
+        while(tempCol - 1 >= 0 && wall[row][tempCol-1]==1){
             points++;
             tempCol--;
         }
-        while (wall[row][col+1]==1){
+        while (col + 1 < 5 && wall[row][col+1]==1){
             points++;
             col++;
         }
@@ -280,11 +300,11 @@ public class Board {
     private int calculateNumOfHorizontal(int row, int col){
         int points=0;
         int tempRow=row;
-        while(wall[tempRow-1][col]==1){
+        while(tempRow - 1 >= 0 && wall[tempRow-1][col]==1){
             points++;
             tempRow--;
         }
-        while (wall[row+1][col]==1){
+        while (row+1<5 && wall[row+1][col]==1){
             points++;
             row++;
         }
@@ -311,5 +331,17 @@ public class Board {
             left = wall[rowIndex] [colIndex-1];
         }
         return right+left;
+    }
+
+    public int[][] getWall() {
+        return wall;
+    }
+
+    public int[] getFloorLine() {
+        return floorLine;
+    }
+
+    public int[][] getPatternLines() {
+        return patternLines;
     }
 }
