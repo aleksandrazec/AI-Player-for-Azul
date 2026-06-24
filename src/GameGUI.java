@@ -71,6 +71,7 @@ public class GameGUI extends JFrame {
         int category;
 //        0-4 factories, 5 center
         int factory=-1;
+//        0-4 actual pattern lines, 5 floor line
         int patternLine=-1;
 //        0-min, 1-max, 2-unassigned
         int belongsTo;
@@ -282,6 +283,48 @@ public class GameGUI extends JFrame {
             factoryPanel.revalidate();
             factoryPanel.repaint();
         }
+    }
+    public void gameOver(int botPoints, int playerPoints) {
+        for (List<Tile> factory : factories) {
+            for (Tile tile : factory) {
+                if (tile.isButton) tile.disableButton();
+            }
+        }
+        for (Tile tile : centerOfTable) {
+            if (tile.isButton) tile.disableButton();
+        }
+
+        for (int i = 0; i < 5; i++) {
+            for (int j = 0; j < 5; j++) {
+                if (maxPatternLines[i][j] != null && maxPatternLines[i][j].isButton)
+                    maxPatternLines[i][j].disableButton();
+                if (minPatternLines[i][j] != null && minPatternLines[i][j].isButton)
+                    minPatternLines[i][j].disableButton();
+            }
+        }
+        for (Tile tile : maxMinusPoints) {
+            if (tile != null && tile.isButton) tile.disableButton();
+        }
+        for (Tile tile : minMinusPoints) {
+            if (tile != null && tile.isButton) tile.disableButton();
+        }
+
+        String winner;
+        if (botPoints > playerPoints) {
+            winner = "Bot wins!";
+        } else if (playerPoints > botPoints) {
+            winner = "You win!";
+        } else {
+            winner = "It's a tie!";
+        }
+        SwingUtilities.invokeLater(() ->
+                JOptionPane.showMessageDialog(
+                        this,
+                        winner + "\n\nBot: " + botPoints + " points\nYou: " + playerPoints + " points",
+                        "Game Over",
+                        JOptionPane.INFORMATION_MESSAGE
+                )
+        );
     }
     private void updateCenterOfTable(){
         int[] centerData = game.getCenterOfTable();
@@ -664,15 +707,17 @@ public class GameGUI extends JFrame {
 
         if(isMax){
             for (int i = 0; i < 7; i++) {
-                Tile tile=new Tile(-1, false, false,4,1);
-                minusPointsTiles.add(tile.label);
+                Tile tile=new Tile(-1, false, true,4,1);
+                minusPointsTiles.add(tile.button);
                 maxMinusPoints[i]=tile;
+                tile.setPatternLine(5);
             }
         }else{
             for (int i = 0; i < 7; i++) {
-                Tile tile=new Tile(-1, false, false,4,0);
-                minusPointsTiles.add(tile.label);
+                Tile tile=new Tile(-1, false, true,4,0);
+                minusPointsTiles.add(tile.button);
                 minMinusPoints[i]=tile;
+                tile.setPatternLine(5);
             }
         }
         minusPointsPanel.add(minusPointsValues, BorderLayout.NORTH);

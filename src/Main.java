@@ -1,6 +1,4 @@
 import java.util.ArrayList;
-import java.util.List;
-
 public class Main {
     public static void main(String[] args) {
         Game game=new Game();
@@ -49,6 +47,7 @@ public class Main {
         System.out.println("Game Over!");
         System.out.println("Final Score - Bot: " + game.getMax().getCurrentPoints() +
                 ", Player: " + game.getMin().getCurrentPoints());
+        gameGUI.gameOver(game.getMax().getCurrentPoints(), game.getMin().getCurrentPoints());
     }
 }
 

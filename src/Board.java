@@ -1,5 +1,3 @@
-import java.sql.SQLOutput;
-
 public class Board {
     private int currentPoints;
     private Game game;
@@ -47,6 +45,8 @@ public class Board {
         return new Board(currentPoints, game1, isMax, wallCopy, rowFinished, floorLineCopy, patternLinesCopy);
     }
     protected boolean playTurn(int factoryIndex, int typeToTake, int patternLine){
+        if (!isMoveValid(factoryIndex, typeToTake, patternLine)) return false;
+
         if(factoryIndex==5){
             int[] takenTiles= game.takeTilesFromCenterOfTable(typeToTake);
             if(takenTiles[0]==1){
@@ -55,11 +55,37 @@ public class Board {
                 minusPoints[0]=1;
                 addMinusPoints(minusPoints);
             }
+            if (patternLine==5){
+                addMinusPoints(takenTiles);
+                return true;
+            }
 //            System.out.println("placed tiles of type "+typeToTake+" on pattern line "+patternLine);
              return placeTilesOnPatternLine(patternLine, takenTiles);
         }else{
+            int[] takenTiles= game.takeTilesFromFactory(factoryIndex, typeToTake);
+            if (patternLine==5){
+                addMinusPoints(takenTiles);
+                return true;
+            }
+
 //            System.out.println("placed tiles of type "+typeToTake+" on pattern line "+patternLine);
-            return placeTilesOnPatternLine(patternLine, game.takeTilesFromFactory(factoryIndex, typeToTake));
+            return placeTilesOnPatternLine(patternLine, takenTiles);
+        }
+    }
+    protected boolean isMoveValid(int factoryIndex, int typeToTake, int patternLine) {
+        if (typeToTake == 0) return false;
+        if (patternLine < 0 || patternLine > 5) return false;
+        if(patternLine<5){
+            if (wallRowContainsTile(patternLine, typeToTake)) return false;
+            if (!tileArrayIsEmpty(patternLines[patternLine]) && getTypeOfPatternLine(patternLine) != typeToTake) return false;
+            if (patternLineIsFull(patternLine)) return false;
+        }
+
+        if (factoryIndex == 5) {
+            return game.getCenterOfTable()[typeToTake] > 0;
+        } else {
+            if (factoryIndex < 0 || factoryIndex > 4) return false;
+            return game.getFactories()[factoryIndex][typeToTake] > 0;
         }
     }
     protected int getCurrentPoints() {
@@ -141,9 +167,14 @@ public class Board {
     private int scoreRow(int index){
         int value=0;
         if(getTotalTilesInArray(patternLines[index])==(index+1)){
-            value=placeTileOnWall(index, getTypeOfPatternLine(index));
-            patternLines[index][getTypeOfPatternLine(index)]--;
+            int type=getTypeOfPatternLine(index);
+            value=placeTileOnWall(index, type);
+            patternLines[index][type]--;
             game.addTilesToTileBox(patternLines[index]);
+//            patternLines[index][type]=0;
+            for (int i = 0; i < patternLines[index].length; i++) {
+                patternLines[index][i]=0;
+            }
         }
         return value;
     }
@@ -234,7 +265,11 @@ public class Board {
                 }
             }
         }
-        return colAmount[0]+colAmount[1]+colAmount[2]+colAmount[3]+colAmount[4];
+        int num = 0;
+        for (int count : colAmount) {
+            if (count == 5) num++;
+        }
+        return num;
     }
     protected int getNumberOfFullDiagonals(){
         int[] tilesPerColor = new int[6];
@@ -265,50 +300,36 @@ public class Board {
         }
         int col= getColIndexBasedOnType(row,type);
         wall[row][col]=1;
-        int verticalNeighbors=getVerticalNeighbors(row,col);
-        int horizontalNeighbors=getHorizontalNeighbors(row,col);
-        if(verticalNeighbors+horizontalNeighbors==0){
-            return 1;
+
+        boolean rowComplete = true;
+        for (int j = 0; j < 5; j++) {
+            if (wall[row][j] == 0) { rowComplete = false; break; }
         }
-        if(verticalNeighbors==0){
-            if(calculateNumOfHorizontal(row,col)==5){
-                rowFinished=true;
-            }
-            return calculateNumOfHorizontal(row,col);
-        }
-        if(horizontalNeighbors==0){
-            return calculateNumOfVertical(row,col);
-        }
-        if(calculateNumOfHorizontal(row,col)==5){
-            rowFinished=true;
-        }
-        return calculateNumOfHorizontal(row,col) + calculateNumOfVertical(row,col);
+        if (rowComplete) rowFinished = true;
+
+        int verticalNeighbors = getVerticalNeighbors(row, col);
+        int horizontalNeighbors = getHorizontalNeighbors(row, col);
+        if (verticalNeighbors == 0 && horizontalNeighbors == 0) return 1;
+        if (verticalNeighbors == 0) return calculateNumOfHorizontal(row, col);
+        if (horizontalNeighbors == 0) return calculateNumOfVertical(row, col);
+        return calculateNumOfHorizontal(row, col) + calculateNumOfVertical(row, col);
     }
-    private int calculateNumOfVertical(int row, int col){
-        int points=0;
-        int tempCol=col;
-        while(tempCol - 1 >= 0 && wall[row][tempCol-1]==1){
-            points++;
-            tempCol--;
-        }
-        while (col + 1 < 5 && wall[row][col+1]==1){
-            points++;
-            col++;
-        }
-        return points+1;
+    private int calculateNumOfVertical(int row, int col) {
+        int points = 1;
+        int tempRow = row - 1;
+        while (tempRow >= 0 && wall[tempRow][col] == 1) { points++; tempRow--; }
+        tempRow = row + 1;
+        while (tempRow < 5 && wall[tempRow][col] == 1) { points++; tempRow++; }
+        return points;
     }
-    private int calculateNumOfHorizontal(int row, int col){
-        int points=0;
-        int tempRow=row;
-        while(tempRow - 1 >= 0 && wall[tempRow-1][col]==1){
-            points++;
-            tempRow--;
-        }
-        while (row+1<5 && wall[row+1][col]==1){
-            points++;
-            row++;
-        }
-        return points+1;
+
+    private int calculateNumOfHorizontal(int row, int col) {
+        int points = 1;
+        int tempCol = col - 1;
+        while (tempCol >= 0 && wall[row][tempCol] == 1) { points++; tempCol--; }
+        tempCol = col + 1;
+        while (tempCol < 5 && wall[row][tempCol] == 1) { points++; tempCol++; }
+        return points;
     }
     private int getVerticalNeighbors(int rowIndex, int colIndex){
         int up=0;

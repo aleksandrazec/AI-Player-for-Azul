@@ -1,8 +1,6 @@
 import java.io.IOException;
 import java.security.SecureRandom;
 import java.util.ArrayList;
-import java.util.List;
-import java.util.Random;
 
 public class Game {
     private Board max;
@@ -87,13 +85,9 @@ public class Game {
         if(isFinished){
             return true;
         }
-        if(factoriesAreEmpty() && tileArrayIsEmpty(centerOfTable)){
-            if(max.isRowFinished() || min.isRowFinished()) {
-                max.scoreFinalPoints();
-                min.scoreFinalPoints();
-                isFinished = true;
-                return true;
-            }
+        if(max.isRowFinished() || min.isRowFinished()){
+            isFinished = true;
+            return true;
         }
         return false;
     }
@@ -130,35 +124,50 @@ public class Game {
             };
         }
     }
+    //    POTENTIAL ISSUE IN getPotentialGameStates() - doesn't know what to do if factories&center are empty
     protected ArrayList<Game> getPotentialGameStates(){
         ArrayList<Game> potentialStates = new ArrayList<>();
         Game potentialState;
-        if(!centerIsEmpty()){
+        if(!this.isFinished) {
+            if (!centerIsEmpty()) {
 //            for each type of tile in center
-            for (int i = 0; i < 6; i++) {
-                if (centerOfTable[i]>0){
+                for (int i = 0; i < 6; i++) {
+                    if (centerOfTable[i] > 0) {
 //                    for each potential pattern line
-                    for (int j = 0; j < 5; j++) {
-                        potentialState=this.copy();
-                        if(potentialState.playTurn(5,i,j)){
-                            System.out.println(5+" "+i+" "+j);
+                        for (int j = 0; j < 5; j++) {
+                            potentialState = this.copy();
+                            if (potentialState.playTurn(5, i, j)) {
+                                System.out.println(5 + " " + i + " " + j);
+                                potentialStates.add(potentialState);
+                            }
+                        }
+//                    for floor line
+                        potentialState = this.copy();
+                        if (potentialState.playTurn(5, i, 5)) {
+                            System.out.println(5 + " " + i + " " + 5);
                             potentialStates.add(potentialState);
                         }
                     }
                 }
             }
-        }
 //        for each factory possible
-        for (int i = 0; i < 5; i++) {
-            if(!factoryIsEmpty(i)){
+            for (int i = 0; i < 5; i++) {
+                if (!factoryIsEmpty(i)) {
 //            for each type of tile in factory
-                for (int j = 0; j < 6; j++) {
-                    if(factories[i][j]>0){
+                    for (int j = 0; j < 6; j++) {
+                        if (factories[i][j] > 0) {
 //                        for each potential pattern line
-                        for (int k = 0; k < 5; k++) {
-                            potentialState=this.copy();
-                            if(potentialState.playTurn(i,j,k)){
-                                System.out.println(i+" "+j+" "+k);
+                            for (int k = 0; k < 5; k++) {
+                                potentialState = this.copy();
+                                if (potentialState.playTurn(i, j, k)) {
+                                    System.out.println(i + " " + j + " " + k);
+                                    potentialStates.add(potentialState);
+                                }
+                            }
+//                        for floor line
+                            potentialState = this.copy();
+                            if (potentialState.playTurn(i, j, 5)) {
+                                System.out.println(i + " " + j + " " + 5);
                                 potentialStates.add(potentialState);
                             }
                         }
@@ -168,46 +177,63 @@ public class Game {
         }
         return potentialStates;
     }
+//    POTENTIAL ISSUE IN getPotentialGameStates() - doesn't know what to do if factories&center are empty
     protected int[] findPotentialGameState(int index){
-        index=index+1;
+//        index=index+1;
         Game potentialState;
-        if(!centerIsEmpty()){
+        if(!this.isFinished) {
+            if (!centerIsEmpty()) {
 //            for each type of tile in center
-            for (int i = 0; i < 6; i++) {
-                if (centerOfTable[i]>0){
+                for (int i = 0; i < 6; i++) {
+                    if (centerOfTable[i] > 0) {
 //                    for each potential pattern line
-                    for (int j = 0; j < 5; j++) {
-                        potentialState=this.copy();
-                        if(potentialState.playTurn(5,i,j)){
-                            if(index==0){
-                                return new int[]{5,i,j};
-                            }else{
+                        for (int j = 0; j < 5; j++) {
+                            potentialState = this.copy();
+                            if (potentialState.playTurn(5, i, j)) {
+                                if (index == 0) {
+                                    return new int[]{5, i, j};
+                                } else {
+                                    index--;
+                                }
+                            }
+                        }
+//                    for floor line
+                        potentialState = this.copy();
+                        if (potentialState.playTurn(5, i, 5)) {
+                            if (index == 0) {
+                                return new int[]{5, i, 5};
+                            } else {
                                 index--;
                             }
-                        }else{
-                            index--;
                         }
                     }
                 }
             }
-        }
 //        for each factory possible
-        for (int i = 0; i < 5; i++) {
-            if(!factoryIsEmpty(i)){
+            for (int i = 0; i < 5; i++) {
+                if (!factoryIsEmpty(i)) {
 //            for each type of tile in factory
-                for (int j = 0; j < 6; j++) {
-                    if(factories[i][j]>0){
+                    for (int j = 0; j < 6; j++) {
+                        if (factories[i][j] > 0) {
 //                        for each potential pattern line
-                        for (int k = 0; k < 5; k++) {
-                            potentialState=this.copy();
-                            if(potentialState.playTurn(i,j,k)){
-                                if(index==0){
-                                    return new int[]{i,j,k};
-                                }else{
+                            for (int k = 0; k < 5; k++) {
+                                potentialState = this.copy();
+                                if (potentialState.playTurn(i, j, k)) {
+                                    if (index == 0) {
+                                        return new int[]{i, j, k};
+                                    } else {
+                                        index--;
+                                    }
+                                }
+                            }
+                            //                        for floor line
+                            potentialState = this.copy();
+                            if (potentialState.playTurn(i, j, 5)) {
+                                if (index == 0) {
+                                    return new int[]{i, j, 5};
+                                } else {
                                     index--;
                                 }
-                            }else{
-                                index--;
                             }
                         }
                     }
@@ -219,33 +245,40 @@ public class Game {
     protected Game getCurrentGameState(){
         return this.copy();
     }
-//    ISSUE IN playTurn() - refilling factories/center shouldn't be a separate move
     protected boolean playTurn(int factoryIndex, int typeToTake, int patternLine){
-        if(factoriesAreEmpty() && tileArrayIsEmpty(centerOfTable)){
-            if(this.isTerminal()){
-                return false;
-            }else{
-                max.scorePoints();
-                min.scorePoints();
-                for (int i = 0; i < 5; i++) {
-                    factories[i]=pullFourTilesFromBag();
-                }
-                centerOfTable[0]=1;
-                return true;
-            }
+        if(this.isTerminal()){
+            return false;
         }
+        boolean turnValid=false;
+
         if(maxTurn){
             if(max.playTurn(factoryIndex, typeToTake, patternLine)){
                 maxTurn=!maxTurn;
-                return true;
+                turnValid=true;
             }
         }else{
             if(min.playTurn(factoryIndex, typeToTake, patternLine)){
                 maxTurn=!maxTurn;
-                return true;
+                turnValid=true;
             }
         }
-        return false;
+
+        if(turnValid && factoriesAreEmpty() && tileArrayIsEmpty(centerOfTable)){
+            max.scorePoints();
+            min.scorePoints();
+            if(max.isRowFinished() || min.isRowFinished()){
+                max.scoreFinalPoints();
+                min.scoreFinalPoints();
+                isFinished = true;
+            } else {
+                for (int i = 0; i < 5; i++) {
+                    factories[i] = pullFourTilesFromBag();
+                }
+                centerOfTable[0] = 1;
+            }
+        }
+
+        return turnValid;
     }
     protected void setMaxTurn(boolean value){
         maxTurn =value;
