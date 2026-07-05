@@ -15,8 +15,8 @@ public class Main {
                     int bestValue = Integer.MIN_VALUE;
 
                     for (Game potentialState : potentialStates) {
-                        int value = minimax.minimax(potentialState, 0, Integer.MIN_VALUE, Integer.MAX_VALUE, false);
-                        if (value > bestValue) {
+                        int value = minimax.minimax(potentialState, 3, Integer.MIN_VALUE, Integer.MAX_VALUE, false);
+                        if (value >= bestValue) {
                             bestValue = value;
                             bestState = potentialState;
                         }
@@ -37,7 +37,7 @@ public class Main {
                 }
             } else {
                 try {
-                    Thread.sleep(1000);
+                    Thread.sleep(100);
                 } catch (InterruptedException e) {
                     e.printStackTrace();
                 }
@@ -50,5 +50,3 @@ public class Main {
         gameGUI.gameOver(game.getMax().getCurrentPoints(), game.getMin().getCurrentPoints());
     }
 }
-
-

@@ -78,8 +78,173 @@ public class Game {
         gameCopy.assignPlayers(max.copy(gameCopy), min.copy(gameCopy));
         return gameCopy;
     }
-    protected int evaluateState(){
-        return random.nextInt(-1000,1000);
+//    protected int evaluateState(){
+//        return random.nextInt(-1000,1000);
+//    }
+protected int evaluateState() {
+    final int W_SCORE    = 100;
+    final int W_PATTERN  = 20;
+    final int W_PARTIAL  = 3;
+    final int W_FLOOR    = 10;
+    final int W_TOKEN    = 3;
+    final int W_ROW      = 5;
+    final int W_COL      = 10;
+    final int W_DIAG     = 8;
+    final int W_INCONV   = 4;
+    final int W_GAMEOVER = 25;
+
+    int score = 0;
+
+    score += W_SCORE * (max.getCurrentPoints() - min.getCurrentPoints());
+
+    score += W_PATTERN * (estimatePatternScore(max) - estimatePatternScore(min));
+
+    score += W_PARTIAL * (weightedPartialTiles(max) - weightedPartialTiles(min));
+
+    score += W_FLOOR * (calcFloorPenalty(min.getFloorLine()) - calcFloorPenalty(max.getFloorLine()));
+
+    if (max.getFloorLine()[0] == 1) score -= W_TOKEN;
+    if (min.getFloorLine()[0] == 1) score += W_TOKEN;
+
+    score += W_ROW  * (calcRowProgress(max)  - calcRowProgress(min));
+    score += W_COL  * (calcColProgress(max)  - calcColProgress(min));
+    score += W_DIAG * (calcDiagProgress(max) - calcDiagProgress(min));
+
+    score += W_INCONV * (calcInconvenience(min) - calcInconvenience(max));
+
+    int totalLead = (max.getCurrentPoints() + estimatePatternScore(max))
+            - (min.getCurrentPoints() + estimatePatternScore(min));
+    int rowLead = max.getNumberOfFullRows() - min.getNumberOfFullRows();
+    if (totalLead > 0) {
+        score += W_GAMEOVER * max.getNumberOfFullRows();
+    } else if (totalLead < 0) {
+        score -= W_GAMEOVER * max.getNumberOfFullRows();
+    }
+    score -= W_GAMEOVER * min.getNumberOfFullRows();
+
+    return score;
+
+}
+    private int weightedPartialTiles(Board board) {
+        int[][] patternLines = board.getPatternLines();
+        int total = 0;
+        for (int row = 0; row < 5; row++) {
+            int count = evalCountTiles(patternLines[row]);
+            if (count > 0 && count < row + 1) {
+                total += count * count;
+            }
+        }
+        return total;
+    }
+    private int estimatePatternScore(Board board) {
+        int[][] patternLines = board.getPatternLines();
+        int[][] wall         = board.getWall();
+        int total = 0;
+        for (int row = 0; row < 5; row++) {
+            int type  = evalGetType(patternLines[row]);
+            int count = evalCountTiles(patternLines[row]);
+            if (type > 0 && count == row + 1) {
+                int col = (row + type - 1) % 5;
+                total += estimatePlacementScore(wall, row, col);
+            }
+        }
+        return total;
+    }
+
+    private int estimatePlacementScore(int[][] wall, int row, int col) {
+        int h = 1;
+        for (int c = col - 1; c >= 0 && wall[row][c] == 1; c--) h++;
+        for (int c = col + 1; c <  5 && wall[row][c] == 1; c++) h++;
+        int v = 1;
+        for (int r = row - 1; r >= 0 && wall[r][col] == 1; r--) v++;
+        for (int r = row + 1; r <  5 && wall[r][col] == 1; r++) v++;
+        if (h == 1 && v == 1) return 1;
+        if (h == 1) return v;
+        if (v == 1) return h;
+        return h + v;
+    }
+
+    private int calcFloorPenalty(int[] floorLine) {
+        int count = 0;
+        for (int v : floorLine) count += v;
+        count = Math.min(count, 7);
+        int penalty = 0;
+        for (int i = 0; i < count; i++) penalty -= StaticGameData.floorLineValues[i];
+        return penalty;
+    }
+
+    private int calcRowProgress(Board board) {
+        int[][] wall         = board.getWall();
+        int[][] patternLines = board.getPatternLines();
+        int progress = 0;
+        for (int row = 0; row < 5; row++) {
+            int tiles = 0;
+            for (int col = 0; col < 5; col++) tiles += wall[row][col];
+            int type  = evalGetType(patternLines[row]);
+            int count = evalCountTiles(patternLines[row]);
+            if (type > 0 && count == row + 1) tiles = Math.min(tiles + 1, 5);
+            progress += tiles * tiles;
+        }
+        return progress;
+    }
+
+    private int calcColProgress(Board board) {
+        int[][] wall         = board.getWall();
+        int[][] patternLines = board.getPatternLines();
+        int[] colTiles = new int[5];
+        for (int row = 0; row < 5; row++) {
+            for (int col = 0; col < 5; col++) colTiles[col] += wall[row][col];
+            int type  = evalGetType(patternLines[row]);
+            int count = evalCountTiles(patternLines[row]);
+            if (type > 0 && count == row + 1) {
+                int col = (row + type - 1) % 5;
+                colTiles[col] = Math.min(colTiles[col] + 1, 5);
+            }
+        }
+        int progress = 0;
+        for (int t : colTiles) progress += t * t;
+        return progress;
+    }
+
+    private int calcDiagProgress(Board board) {
+        int[][] wall         = board.getWall();
+        int[][] patternLines = board.getPatternLines();
+        int[] colorCount = new int[6];
+        for (int row = 0; row < 5; row++) {
+            for (int col = 0; col < 5; col++) {
+                if (wall[row][col] == 1) colorCount[StaticGameData.wallPattern[row][col]]++;
+            }
+            int type  = evalGetType(patternLines[row]);
+            int count = evalCountTiles(patternLines[row]);
+            if (type > 0 && count == row + 1) colorCount[type] = Math.min(colorCount[type] + 1, 5);
+        }
+        int progress = 0;
+        for (int i = 1; i <= 5; i++) progress += colorCount[i] * colorCount[i];
+        return progress;
+    }
+
+    private int calcInconvenience(Board board) {
+        int[][] patternLines = board.getPatternLines();
+        int stuck = 0;
+        for (int row = 0; row < 5; row++) {
+            int type  = evalGetType(patternLines[row]);
+            int count = evalCountTiles(patternLines[row]);
+            if (type > 0 && count < row + 1) stuck += (row + 1 - count);
+        }
+        return stuck;
+    }
+
+    private int evalGetType(int[] patternLine) {
+        for (int i = 1; i < patternLine.length; i++) {
+            if (patternLine[i] > 0) return i;
+        }
+        return -1;
+    }
+
+    private int evalCountTiles(int[] patternLine) {
+        int total = 0;
+        for (int i = 1; i < patternLine.length; i++) total += patternLine[i];
+        return total;
     }
     protected boolean isTerminal(){
         if(isFinished){
@@ -137,15 +302,9 @@ public class Game {
                         for (int j = 0; j < 5; j++) {
                             potentialState = this.copy();
                             if (potentialState.playTurn(5, i, j)) {
-                                System.out.println(5 + " " + i + " " + j);
+//                                System.out.println(5 + " " + i + " " + j);
                                 potentialStates.add(potentialState);
                             }
-                        }
-//                    for floor line
-                        potentialState = this.copy();
-                        if (potentialState.playTurn(5, i, 5)) {
-                            System.out.println(5 + " " + i + " " + 5);
-                            potentialStates.add(potentialState);
                         }
                     }
                 }
@@ -160,14 +319,37 @@ public class Game {
                             for (int k = 0; k < 5; k++) {
                                 potentialState = this.copy();
                                 if (potentialState.playTurn(i, j, k)) {
-                                    System.out.println(i + " " + j + " " + k);
+//                                    System.out.println(i + " " + j + " " + k);
                                     potentialStates.add(potentialState);
                                 }
                             }
+                        }
+                    }
+                }
+            }
+            if (!centerIsEmpty()) {
+//            for each type of tile in center
+                for (int i = 0; i < 6; i++) {
+                    if (centerOfTable[i] > 0) {
+//                    for floor line
+                        potentialState = this.copy();
+                        if (potentialState.playTurn(5, i, 5)) {
+//                            System.out.println(5 + " " + i + " " + 5);
+                            potentialStates.add(potentialState);
+                        }
+                    }
+                }
+            }
+//        for each factory possible
+            for (int i = 0; i < 5; i++) {
+                if (!factoryIsEmpty(i)) {
+//            for each type of tile in factory
+                    for (int j = 0; j < 6; j++) {
+                        if (factories[i][j] > 0) {
 //                        for floor line
                             potentialState = this.copy();
                             if (potentialState.playTurn(i, j, 5)) {
-                                System.out.println(i + " " + j + " " + 5);
+//                                System.out.println(i + " " + j + " " + 5);
                                 potentialStates.add(potentialState);
                             }
                         }
@@ -197,15 +379,6 @@ public class Game {
                                 }
                             }
                         }
-//                    for floor line
-                        potentialState = this.copy();
-                        if (potentialState.playTurn(5, i, 5)) {
-                            if (index == 0) {
-                                return new int[]{5, i, 5};
-                            } else {
-                                index--;
-                            }
-                        }
                     }
                 }
             }
@@ -226,7 +399,33 @@ public class Game {
                                     }
                                 }
                             }
-                            //                        for floor line
+                        }
+                    }
+                }
+            }
+            if (!centerIsEmpty()) {
+//            for each type of tile in center
+                for (int i = 0; i < 6; i++) {
+                    if (centerOfTable[i] > 0) {
+//                    for floor line
+                        potentialState = this.copy();
+                        if (potentialState.playTurn(5, i, 5)) {
+                            if (index == 0) {
+                                return new int[]{5, i, 5};
+                            } else {
+                                index--;
+                            }
+                        }
+                    }
+                }
+            }
+            //        for each factory possible
+            for (int i = 0; i < 5; i++) {
+                if (!factoryIsEmpty(i)) {
+//            for each type of tile in factory
+                    for (int j = 0; j < 6; j++) {
+                        if (factories[i][j] > 0) {
+//                        for floor line
                             potentialState = this.copy();
                             if (potentialState.playTurn(i, j, 5)) {
                                 if (index == 0) {
