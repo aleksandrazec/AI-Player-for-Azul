@@ -15,12 +15,12 @@ public class Main {
                     int bestValue = Integer.MIN_VALUE;
 
                     for (Game potentialState : potentialStates) {
-                        int value = minimax.minimax(potentialState, 3, Integer.MIN_VALUE, Integer.MAX_VALUE, false);
+                        int value = minimax.minimax(potentialState, 4, Integer.MIN_VALUE, Integer.MAX_VALUE, false);
                         if (value >= bestValue) {
                             bestValue = value;
                             bestState = potentialState;
                         }
-                        System.out.println("Checked potential state "+potentialStates.indexOf(potentialState));
+//                        System.out.println("Checked potential state "+potentialStates.indexOf(potentialState));
                     }
 
                     if (bestState != null) {

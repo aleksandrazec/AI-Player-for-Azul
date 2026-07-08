@@ -103,8 +103,8 @@ protected int evaluateState() {
 
     score += W_FLOOR * (calcFloorPenalty(min.getFloorLine()) - calcFloorPenalty(max.getFloorLine()));
 
-    if (max.getFloorLine()[0] == 1) score -= W_TOKEN;
-    if (min.getFloorLine()[0] == 1) score += W_TOKEN;
+    if (max.getFloorLine()[0] == 1) score += W_TOKEN;
+    if (min.getFloorLine()[0] == 1) score -= W_TOKEN;
 
     score += W_ROW  * (calcRowProgress(max)  - calcRowProgress(min));
     score += W_COL  * (calcColProgress(max)  - calcColProgress(min));
@@ -114,7 +114,7 @@ protected int evaluateState() {
 
     int totalLead = (max.getCurrentPoints() + estimatePatternScore(max))
             - (min.getCurrentPoints() + estimatePatternScore(min));
-    int rowLead = max.getNumberOfFullRows() - min.getNumberOfFullRows();
+
     if (totalLead > 0) {
         score += W_GAMEOVER * max.getNumberOfFullRows();
     } else if (totalLead < 0) {
@@ -289,7 +289,6 @@ protected int evaluateState() {
             };
         }
     }
-    //    POTENTIAL ISSUE IN getPotentialGameStates() - doesn't know what to do if factories&center are empty
     protected ArrayList<Game> getPotentialGameStates(){
         ArrayList<Game> potentialStates = new ArrayList<>();
         Game potentialState;
@@ -359,7 +358,6 @@ protected int evaluateState() {
         }
         return potentialStates;
     }
-//    POTENTIAL ISSUE IN getPotentialGameStates() - doesn't know what to do if factories&center are empty
     protected int[] findPotentialGameState(int index){
 //        index=index+1;
         Game potentialState;
@@ -470,14 +468,86 @@ protected int evaluateState() {
                 min.scoreFinalPoints();
                 isFinished = true;
             } else {
-                for (int i = 0; i < 5; i++) {
-                    factories[i] = pullFourTilesFromBag();
+                if (gameGUI == null) {
+                    refillFactoriesBasedOnDistribution();
+                } else {
+                    for (int i = 0; i < 5; i++) {
+                        factories[i] = pullFourTilesFromBag();
+                    }
                 }
                 centerOfTable[0] = 1;
             }
         }
 
         return turnValid;
+    }
+    private void refillFactoriesBasedOnDistribution(){
+        int tileBagTotal=0;
+        for (int i = 1; i < 6; i++) tileBagTotal += tileBag[i];
+
+        if (tileBagTotal >= 20) {
+            for (int i = 0; i < 5; i++) {
+                refillFactoryBasedOnDistribution(tileBagTotal,i, 4);
+            }
+        }else{
+            int factoryIndex=0;
+            while (tileBagTotal>=4 && factoryIndex<5){
+                refillFactoryBasedOnDistribution(tileBagTotal, factoryIndex,4);
+                factoryIndex++;
+                tileBagTotal-=4;
+            }
+            if(tileBagTotal>0){
+                int toAssign=4-tileBagTotal;
+                for (int i = 1; i < 6; i++) {
+                    factories[factoryIndex][i]+=tileBag[i];
+                    tileBagTotal-=tileBag[i];
+                    tileBag[i]=0;
+                }
+                fillTileBag();
+                for (int i = 1; i < 6; i++) tileBagTotal += tileBag[i];
+                refillFactoryBasedOnDistribution(tileBagTotal, factoryIndex, toAssign);
+                factoryIndex++;
+                tileBagTotal-=toAssign;
+                while (factoryIndex<5){
+                    refillFactoryBasedOnDistribution(tileBagTotal, factoryIndex, 4);
+                    factoryIndex++;
+                    tileBagTotal-=4;
+                }
+            }else{
+                fillTileBag();
+                for (int i = 1; i < 6; i++) tileBagTotal += tileBag[i];
+                while (factoryIndex<5) {
+                    refillFactoryBasedOnDistribution(tileBagTotal, factoryIndex, 4);
+                    factoryIndex++;
+                    tileBagTotal-=4;
+                }
+            }
+        }
+    }
+    private void refillFactoryBasedOnDistribution(int tileBagTotal, int factoryIndex, int toAssign){
+        int[] tiles = new int[6];
+        double[] remainders = new double[6];
+        int assigned = 0;
+        for (int i = 1; i < 6; i++) {
+            double exact=(tileBag[i]* toAssign)/ (double) tileBagTotal;
+            tiles[i]= (int) exact;
+            remainders[i] = exact-tiles[i];
+            assigned+=tiles[i];
+        }
+        while (assigned<toAssign){
+            int best=1;
+            for (int i = 2; i < 6; i++) {
+                if(remainders[i]>remainders[best]) best=i;
+            }
+            tiles[best]++;
+            remainders[best]=-1;
+            assigned++;
+        }
+        for (int i = 1; i < 6; i++) {
+            factories[factoryIndex][i]+=tiles[i];
+            tileBag[i]-=tiles[i];
+        }
+//        System.out.println("assigned factory");
     }
     protected void setMaxTurn(boolean value){
         maxTurn =value;
