@@ -111,7 +111,7 @@ public class GameGUI extends JFrame {
                     if(factory!=-1){
                         selectedTileType=type;
                         selectedTileFactory=factory;
-                        System.out.println("Selected "+type+" tile from "+factory+" factory");
+//                        System.out.println("Selected "+type+" tile from "+factory+" factory");
                     }
                 }else{
                     if(patternLine!=-1 && belongsTo==0){
@@ -163,7 +163,7 @@ public class GameGUI extends JFrame {
             BufferedImage image = gc.createCompatibleImage(w, h);
             Graphics2D g2d = image.createGraphics();
             icon.paintIcon(null, g2d, 0, 0);
-            BufferedImage gray = applyPartialGray(image, 0.6f);
+            BufferedImage gray = applyPartialGray(image, 0.7f);
 //            Image gray = GrayFilter.createDisabledImage(image);
             if(isButton){
                 button.setIcon(new ImageIcon(gray));
@@ -317,14 +317,17 @@ public class GameGUI extends JFrame {
         } else {
             winner = "It's a tie!";
         }
-        SwingUtilities.invokeLater(() ->
-                JOptionPane.showMessageDialog(
-                        this,
-                        winner + "\n\nBot: " + botPoints + " points\nYou: " + playerPoints + " points",
-                        "Game Over",
-                        JOptionPane.INFORMATION_MESSAGE
-                )
-        );
+        SwingUtilities.invokeLater(() -> {
+            JOptionPane.showMessageDialog(
+                    this,
+                    winner + "\n\nBot: " + botPoints + " points\nYou: " + playerPoints + " points",
+                    "Game Over",
+                    JOptionPane.INFORMATION_MESSAGE
+            );
+            dispose();          // close the game window
+            System.exit(0);     // terminate the application
+        });
+
     }
     private void updateCenterOfTable(){
         int[] centerData = game.getCenterOfTable();

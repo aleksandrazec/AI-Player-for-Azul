@@ -9,13 +9,13 @@ public class Main {
                 System.out.println("Bot is thinking...");
 
                 ArrayList<Game> potentialStates = game.getPotentialGameStates();
-                System.out.println("Number of potential states is: "+potentialStates.size());
+//                System.out.println("Number of potential states is: "+potentialStates.size());
                 if (!potentialStates.isEmpty()) {
                     Game bestState = null;
                     int bestValue = Integer.MIN_VALUE;
 
                     for (Game potentialState : potentialStates) {
-                        int value = minimax.minimax(potentialState, 4, Integer.MIN_VALUE, Integer.MAX_VALUE, false);
+                        int value = minimax.minimax(potentialState, 3, Integer.MIN_VALUE, Integer.MAX_VALUE, false);
                         if (value >= bestValue) {
                             bestValue = value;
                             bestState = potentialState;
@@ -25,10 +25,11 @@ public class Main {
 
                     if (bestState != null) {
                         int[] move= game.findPotentialGameState(potentialStates.indexOf(bestState));
-                        System.out.println("Move is from factory: "+move[0]+" tile of type: "+move[1]+" to pattern line "+move[2]);
+//                        System.out.println("Move is from factory: "+move[0]+" tile of type: "+move[1]+" to pattern line "+move[2]);
                         if(move[0]!=-1&&move[1]!=-1&&move[2]!=-1) {
                             gameGUI.playTurn(move[0], move[1], move[2]);
                             System.out.println("Bot made a move.");
+                            System.out.println("Your turn.");
                         }
                     }
                 } else {

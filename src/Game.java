@@ -78,18 +78,15 @@ public class Game {
         gameCopy.assignPlayers(max.copy(gameCopy), min.copy(gameCopy));
         return gameCopy;
     }
-//    protected int evaluateState(){
-//        return random.nextInt(-1000,1000);
-//    }
 protected int evaluateState() {
     final int W_SCORE    = 100;
     final int W_PATTERN  = 20;
     final int W_PARTIAL  = 3;
     final int W_FLOOR    = 10;
     final int W_TOKEN    = 3;
-    final int W_ROW      = 5;
-    final int W_COL      = 10;
-    final int W_DIAG     = 8;
+    final int W_ROW  = 4;
+    final int W_COL  = 14;
+    final int W_DIAG = 20;
     final int W_INCONV   = 4;
     final int W_GAMEOVER = 25;
 
@@ -97,7 +94,10 @@ protected int evaluateState() {
 
     score += W_SCORE * (max.getCurrentPoints() - min.getCurrentPoints());
 
-    score += W_PATTERN * (estimatePatternScore(max) - estimatePatternScore(min));
+    int maxPatternScore = estimatePatternScore(max);
+    int minPatternScore = estimatePatternScore(min);
+
+    score += W_PATTERN * (maxPatternScore - minPatternScore);
 
     score += W_PARTIAL * (weightedPartialTiles(max) - weightedPartialTiles(min));
 
@@ -112,19 +112,36 @@ protected int evaluateState() {
 
     score += W_INCONV * (calcInconvenience(min) - calcInconvenience(max));
 
-    int totalLead = (max.getCurrentPoints() + estimatePatternScore(max))
-            - (min.getCurrentPoints() + estimatePatternScore(min));
+    int totalLead = (max.getCurrentPoints() + maxPatternScore) - (min.getCurrentPoints() + minPatternScore);
 
+    int totalProximity = calcGameProximity(max) + calcGameProximity(min);
     if (totalLead > 0) {
-        score += W_GAMEOVER * max.getNumberOfFullRows();
+        score += W_GAMEOVER * totalProximity;
     } else if (totalLead < 0) {
-        score -= W_GAMEOVER * max.getNumberOfFullRows();
+        score -= W_GAMEOVER * totalProximity;
     }
-    score -= W_GAMEOVER * min.getNumberOfFullRows();
 
     return score;
 
 }
+    private int calcGameProximity(Board board) {
+        int[][] wall = board.getWall();
+        int[][] patternLines = board.getPatternLines();
+        int proximity = 0;
+        for (int row = 0; row < 5; row++) {
+            int tiles = 0;
+            for (int col = 0; col < 5; col++) tiles += wall[row][col];
+
+            int type  = evalGetType(patternLines[row]);
+            int count = evalCountTiles(patternLines[row]);
+            if (type > 0 && count == row + 1) tiles = Math.min(tiles + 1, 5);
+
+            if      (tiles == 5) proximity += 4;
+            else if (tiles == 4) proximity += 2;
+            else if (tiles == 3) proximity += 1;
+        }
+        return proximity;
+    }
     private int weightedPartialTiles(Board board) {
         int[][] patternLines = board.getPatternLines();
         int total = 0;
@@ -439,9 +456,6 @@ protected int evaluateState() {
         }
         return new int[]{-1,-1,-1};
     }
-    protected Game getCurrentGameState(){
-        return this.copy();
-    }
     protected boolean playTurn(int factoryIndex, int typeToTake, int patternLine){
         if(this.isTerminal()){
             return false;
@@ -488,6 +502,7 @@ protected int evaluateState() {
         if (tileBagTotal >= 20) {
             for (int i = 0; i < 5; i++) {
                 refillFactoryBasedOnDistribution(tileBagTotal,i, 4);
+                tileBagTotal -= 4;
             }
         }else{
             int factoryIndex=0;
