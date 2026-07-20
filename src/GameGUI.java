@@ -701,9 +701,10 @@ public class GameGUI extends JFrame {
         minusPointsPanel.setBackground(background);
 
         JPanel minusPointsValues = new JPanel(new GridLayout(1, 7, 5, 5));
+        minusPointsValues.setBackground(background);
         for (int i = 0; i < 7; i++) {
             JLabel minusPointsLabel = new JLabel(Integer.toString(StaticGameData.floorLineValues[i]), SwingConstants.CENTER);
-            minusPointsPanel.add(minusPointsLabel);
+            minusPointsValues.add(minusPointsLabel);
         }
         JPanel minusPointsTiles = new JPanel(new GridLayout(1, 7, 5, 5));
         minusPointsTiles.setBackground(background);
