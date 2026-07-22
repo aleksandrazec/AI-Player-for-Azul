@@ -5,7 +5,7 @@ public class Minimax {
     protected int minimax(Game gameState, int depth, int alpha, int beta, boolean isMax){
 //        System.out.println("Minimax at depth "+depth);
         if(gameState.isTerminal()){
-            return gameState.getUtilityValue(isMax);
+            return gameState.getUtilityValue();
         }
         if(depth<=0){
             return gameState.evaluateState();

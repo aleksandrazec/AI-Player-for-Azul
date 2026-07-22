@@ -274,10 +274,9 @@ protected int evaluateState() {
         return false;
     }
     /**
-     * @param isMax true if is max player
-    * @return utility value of player
+    * @return utility value of state
      */
-    protected int getUtilityValue(boolean isMax){
+    protected int getUtilityValue(){
         int utilityValue;
         if(max.getCurrentPoints() > min.getCurrentPoints()){
             utilityValue=1;
