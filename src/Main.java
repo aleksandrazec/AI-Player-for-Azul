@@ -15,7 +15,7 @@ public class Main {
                     int bestValue = Integer.MIN_VALUE;
 
                     for (Game potentialState : potentialStates) {
-                        int value = minimax.minimax(potentialState, 3, Integer.MIN_VALUE, Integer.MAX_VALUE, false);
+                        int value = minimax.minimax(potentialState, 3, Integer.MIN_VALUE, Integer.MAX_VALUE);
                         if (value >= bestValue) {
                             bestValue = value;
                             bestState = potentialState;

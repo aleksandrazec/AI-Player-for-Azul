@@ -2,7 +2,7 @@ import java.util.List;
 
 public class Minimax {
     // call initially with alpha=-inf, and beta=+inf
-    protected int minimax(Game gameState, int depth, int alpha, int beta, boolean isMax){
+    protected int minimax(Game gameState, int depth, int alpha, int beta){
 //        System.out.println("Minimax at depth "+depth);
         if(gameState.isTerminal()){
             return gameState.getUtilityValue();
@@ -10,12 +10,12 @@ public class Minimax {
         if(depth<=0){
             return gameState.evaluateState();
         }
-        if(isMax){
+        if(gameState.maxTurn){
             int maxEval = Integer.MIN_VALUE;
             List<Game> potentialStates = gameState.getPotentialGameStates();
             if(potentialStates.isEmpty()) return gameState.evaluateState();
             for (Game potentialState : potentialStates) {
-                int eval= minimax(potentialState, depth-1, alpha,beta,false);
+                int eval= minimax(potentialState, depth-1, alpha,beta);
                 maxEval=Math.max(maxEval, eval);
                 alpha=Math.max(alpha,eval);
                 if(beta<=alpha){
@@ -28,7 +28,7 @@ public class Minimax {
             List<Game> potentialStates = gameState.getPotentialGameStates();
             if(potentialStates.isEmpty()) return gameState.evaluateState();
             for (Game potentialState : potentialStates) {
-                int eval= minimax(potentialState, depth-1,alpha, beta, true);
+                int eval= minimax(potentialState, depth-1,alpha, beta);
                 minEval=Math.min(minEval, eval);
                 beta=Math.min(beta,eval);
                 if(beta<=alpha){
