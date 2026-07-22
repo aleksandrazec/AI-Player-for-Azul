@@ -292,19 +292,11 @@ protected int evaluateState() {
         }else {
             utilityValue = -1;
         }
-        if(isMax){
-            return switch (utilityValue) {
-                case -1 -> Integer.MIN_VALUE;
-                case 1 -> Integer.MAX_VALUE;
-                default -> 0;
-            };
-        }else{
-            return switch (utilityValue) {
-                case -1 -> Integer.MAX_VALUE;
-                case 1 -> Integer.MIN_VALUE;
-                default -> 0;
-            };
-        }
+        return switch (utilityValue) {
+            case -1 -> Integer.MIN_VALUE;
+            case  1 -> Integer.MAX_VALUE;
+            default -> 0;
+        };
     }
     protected ArrayList<Game> getPotentialGameStates(){
         ArrayList<Game> potentialStates = new ArrayList<>();

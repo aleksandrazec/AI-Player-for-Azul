@@ -9,7 +9,7 @@ public class Main {
                 System.out.println("Bot is thinking...");
 
                 ArrayList<Game> potentialStates = game.getPotentialGameStates();
-                System.out.println("Number of potential states is: "+potentialStates.size());
+//                System.out.println("Number of potential states is: "+potentialStates.size());
                 if (!potentialStates.isEmpty()) {
                     Game bestState = null;
                     int bestValue = Integer.MIN_VALUE;
@@ -20,7 +20,7 @@ public class Main {
                             bestValue = value;
                             bestState = potentialState;
                         }
-                        System.out.println("Checked potential state "+potentialStates.indexOf(potentialState));
+//                        System.out.println("Checked potential state "+potentialStates.indexOf(potentialState));
                     }
 
                     if (bestState != null) {
